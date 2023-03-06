@@ -86,7 +86,7 @@ for (i in 1:ncol(myScore$scored)){
   ul[i] <- round(pU-pL, 3)
 }
 
-#5.3 DISC: Item discrimination power index by point biserial correlation coefficient
+#5.3 DISC: Item discrimination power index by point biserial correlation coefficient (ScorePak® classifies item discrimination as “good” if the index is above .30; “fair” if it is between .10 and.30; and “poor” if it is below .10.)
 disc <- vector("numeric")
 i <- 1
 for (i in 1:ncol(myScore$scored)){
