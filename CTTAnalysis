@@ -26,7 +26,7 @@ myScore <- score(score, key, output.scored=TRUE)
 result <- describe(myScore$score)
 result[,-1]
 
-#3. Reliability
+#3. Reliability (Reliability coefficients theoretically range in value from zero (no reliability) to 1.00 (perfect reliability).)
 alpha(myScore$scored, check.keys = FALSE)
 
 #4. Z-score, T-score, Five point scale, Stanine scale
@@ -143,36 +143,3 @@ i.id <- 1:ncol(myScore$scored)
 list3 <- data.frame(i.id, diff, ul,disc, aeno, adif, adis, aaen, sadif, sadis, saaen, satot)
 datatable(round(list3,3), colnames = c("ID", "DIFF", "pU-pL", "DISC", "AENO", "ADIF",
                                        "ADIS", "AAEN", "SADIF", "SADIS", "SAAEN", "SATOT"), rownames = FALSE)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
