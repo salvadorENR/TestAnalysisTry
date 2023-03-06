@@ -1,0 +1,178 @@
+install.packages("CTT")
+install.packages("psych")
+install.packages("entropy")
+install.packages("knitr")
+install.packages("DT")
+
+library(CTT)
+library(psych)
+
+library(entropy)
+library(knitr)
+library(DT)
+
+# 1.1 Import Data
+## Item
+score <- read.csv("http://lang-tech.net/doc/sample.score.csv", header = TRUE, sep = ",")
+
+## Answer key
+key <- read.csv("http://lang-tech.net/doc/sample.key.csv", header = TRUE, sep =",")
+key <- as.matrix(key)
+
+#1.2 Scoring
+myScore <- score(score, key, output.scored=TRUE)
+
+#2. Descriptive statistics
+result <- describe(myScore$score)
+result[,-1]
+
+#3. Reliability
+alpha(myScore$scored, check.keys = FALSE)
+
+#4. Z-score, T-score, Five point scale, Stanine scale
+#Z-score
+zscore <- scale(rowSums(myScore$scored), center = TRUE, scale = TRUE)
+
+#T-score
+tscore <- zscore*10+50
+
+#five point scale
+five.point.scale <- vector("numeric")
+i <- 1
+for (i in 1:length(myScore$score)){
+  five.point.scale[i] <- round(zscore[i]+3, 0)
+  if (five.point.scale[i] <= 0){
+    five.point.scale[i] <- 1}
+  if (five.point.scale[i] >= 6){
+    five.point.scale[i] <- 5
+  }
+}
+
+#stanine scale
+stanine.scale <- vector("numeric")
+i <- 1
+for (i in 1:length(myScore$score)){
+  stanine.scale[i] <- round(1.96*zscore[i]+5, 0)
+  if (stanine.scale[i] <= 0){
+    stanine.scale[i] <- 1}
+  if (stanine.scale[i] >= 10){
+    stanine.scale[i] <- 9
+  }
+}
+
+#generate the table
+
+p.id <- 1:length(myScore$score)
+list1 <- data.frame(p.id, myScore$score, zscore, tscore, five.point.scale, stanine.scale)
+datatable(round(list1,3), colnames = c("ID", "Score", "Z-score", "T-score", "Five.s", "Stanine.s"), rownames = FALSE)
+
+#5. Item analysis
+#5.1 DIFF: Item difficulty index
+diff <- colSums(myScore$scored)/nrow(score)
+data.matrix(round(diff, 3))
+
+#5.2 pU-pL: Item discrimination power index by Upper(27%) - Lower(27%)
+list2 <- cbind(myScore$scored, myScore$score)
+sort.list <- list2[order(list2[,ncol(list2)], decreasing = TRUE),]
+num <- round(length(myScore$score)*0.27, 0) #number of upper and lowwer groups
+tU <- head(sort.list, n = num) #upper group scores
+tL <- tail(sort.list, n = num) #lower group scores
+
+ul <- vector("numeric")
+i <- 1
+for (i in 1:ncol(myScore$scored)){
+  pU <- sum(tU[,i]/nrow(tU))
+  pL <- sum(tL[,i]/nrow(tL))
+  ul[i] <- round(pU-pL, 3)
+}
+
+#5.3 DISC: Item discrimination power index by point biserial correlation coefficient
+disc <- vector("numeric")
+i <- 1
+for (i in 1:ncol(myScore$scored)){
+  gU <- subset(myScore$scored, myScore$scored[,i] == 1)
+  gL <- subset(myScore$scored, myScore$scored[,i] == 0 )
+  disc[i] <- round((sum(gU)/nrow(gU) - sum(gL)/nrow(gL)) / sd(myScore$score) *
+                     sqrt(diff[i] * (1-diff[i])), 3)
+}
+
+#5.4 AENO: Actual equivalent number of options
+aeno <- vector("numeric")
+i <- 1
+for (i in 1:ncol(score)){
+  per <- table(score[,i]) / nrow(score)
+  aeno[i] <- round(2^entropy.empirical(per, unit="log2"), 3)
+}
+
+#5.5 ADIF: Appropriateness of difficulty
+adif <- (1 - abs(((0.5 + 0.5 * (1 / nrow(summary(score))))-diff) * 2))
+
+#5.6 ADIS: Appropriateness of discrimination power index
+adis <- (disc^2) / (1 - (disc^2))
+
+#5.7 AAEN: Appropriatenss of actual equivalent number of options
+#5.7.1 Ideal entropy
+q <- -(diff * (log10(diff)/log10(2)) + (nrow(summary(score))-1) * 
+         (((1-diff) / (nrow(summary(score))-1))) * (log10((1-diff) / 
+         (nrow(summary(score))-1)) / log10(2)))
+         
+         
+#5.7.2 Ideal actual equivalent number of options
+pamc <- 2^q
+
+#5.7.3 AAEN
+aaen <- (aeno-1) / (pamc-1)
+
+#5.8 SADIF: Standard appropriateness of difficulty
+zadif <- (adif-mean(adif))/sd(adif)
+sadif <- zadif*0.1+0.5
+
+#5.9 SADIS: Standard appropriateness of discrimination power index
+zadis <- (adis-mean(adis))/sd(adis)
+sadis <- zadis*0.1+0.5
+
+#5.10 SAAEN: Standard appropriatenss of actual equivalent number of options
+zaaen <- (aaen-mean(aaen))/sd(aaen)
+saaen <- zaaen*0.1+0.5
+
+#5.11 SATOT: Standard appropriateness total
+satot <- sadif + sadis + saaen
+
+#5.12 RANK: Rank in SATOT order
+i.id <- 1:ncol(myScore$scored)
+list3 <- data.frame(i.id, diff, ul,disc, aeno, adif, adis, aaen, sadif, sadis, saaen, satot)
+datatable(round(list3,3), colnames = c("ID", "DIFF", "pU-pL", "DISC", "AENO", "ADIF",
+                                       "ADIS", "AAEN", "SADIF", "SADIS", "SAAEN", "SATOT"), rownames = FALSE)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
